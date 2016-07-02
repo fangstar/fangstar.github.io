@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Clash Royale Card Calculator</title>
+
+    <!-- Bootstrap -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <link href="./assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="./assets/css/template.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+  <div class="container text-center">
+    <form onsubmit="return false;">
+    <div class="form-group row">
+      <label for="cardType" class="col-sm-2 form-control-label">Card Type</label>
+      <div class="col-sm-4">
+        <select class="form-control" id="cardType_select">
+        </select>
+      </div>
+    </div>
+    <div class="form-group row">
+      <label for="currentCardLevel" class="col-sm-2 form-control-label">Current Card level</label>
+      <div class="col-sm-4">
+        <select class="form-control" id="currentCardLevel_select">
+        </select>
+      </div>
+    </div>
+    <div class="form-group row">
+      <label class="col-sm-2">Number of Cards</label>
+      <div class="col-sm-4">
+        <input type="number" class="form-control" id="numCards_input" value=1 min=0>
+      </div>
+    </div>
+    <div class="form-group row">
+      <div class="col-sm-2 col-sm-offset-2">
+    <button type="button" class="btn btn-primary" id="submitBtn">Submit</button>
+      </div>
+    </div>
+ </form>
+    <div class="col-sm-4 col-sm-offset-1 text-center">
+    <div id="results_div"></div>
+    <div>
+  </div>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <script src="./assets/json/cr_card_data.json"></script>
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="./assets/js/ie10-viewport-bug-workaround.js"></script>
+    
+    <script type="text/javascript">
+      var common = JSON.parse(common_json);
+      var rare = JSON.parse(rare_json);
+      var epic = JSON.parse(epic_json);
+      var legendary = JSON.parse(legendary_json);
+      var cardTypeConstants = ["Common","Rare","Epic","Legendary"];
+ 
+      $(function() {
+        var html = createCardTypeHtmlOptionsHtml();
+        $("#cardType_select").html(html);
+        html = createCurrentCardLevelSelectHtml();
+        $("#currentCardLevel_select").html(html);
+      });
+      
+      $("#cardType_select").change(function() {      
+        html = createCurrentCardLevelSelectHtml(cardType);
+        $("#currentCardLevel_select").html(html);        
+      });
+      
+      $("#submitBtn").click(function() {
+        calculate();
+      });
+      
+      function createCardTypeHtmlOptionsHtml() {
+        var html = "";
+        for (i = 0; i < cardTypeConstants.length; i++) {
+          html+="<option>"+cardTypeConstants[i]+"</option>";
+        }
+        return html;
+      }
+      
+      function createCurrentCardLevelSelectHtml() {
+        var card_arr,html = "";
+        card_arr = getCardTypeArr();
+        for (i = 0; i < card_arr.length; i++) {
+          html+="<option>"+(i+1)+"</option>";
+        }
+        return html;
+      }
+      
+      function calculate() {
+        var i, card_lv,prev_card_lv;
+        var html = "<div id=\"results_header\"><h2>Results</h2></div>";
+
+        cardType = $("#cardType_select").val();
+        currentLevel = $("#currentCardLevel_select").val()-1;
+        numCards = parseInt($("#numCards_input").val());
+        card_arr = getCardTypeArr();
+        currentLevelCard = card_arr[currentLevel];
+        current_card_total = parseInt(currentLevelCard['cards']['total']);
+          for (i = currentLevel; i < card_arr.length; i++) {
+            card_lv = card_arr[i];
+             if (card_lv.cards.total > (numCards+current_card_total)){
+              // One level too high
+              break; 
+            }
+          }
+          if (i == 12) {
+            card_lv = card_arr[12];
+            lv = card_lv['level'];
+            gold_needed = card_lv['gold']['total'] - currentLevelCard['gold']['total'];
+            extra_cards = (numCards+current_card_total) - card_lv['cards']['total'];
+            cards_needed_next_lv = 0;
+          } else {
+              prev_card_lv = card_arr[i-1];
+              lv = prev_card_lv['level'];
+              gold_needed = prev_card_lv['gold']['total'] - currentLevelCard['gold']['total'];
+              extra_cards = (numCards+current_card_total) - prev_card_lv['cards']['total'];
+              cards_needed_next_lv = card_lv['cards']['total'] - (numCards+current_card_total);            
+          }
+          html += "Final Card Level: " + lv+"<br>";
+          html += "Gold needed: " + gold_needed+"<br>";
+          html += "Cards Leftover: " + extra_cards+"<br>";
+          if (i != 12) {
+            html += "For next level ("+(lv+1)+"): Cards: " + card_lv['cards']['needed']+" Gold: "+card_lv['gold']['needed']+ "<br>";
+            html += "You are short: " + cards_needed_next_lv+"<br>";
+          }
+          $("#results_div").html(html);
+      }
+      
+      function getCardTypeArr() {
+        var card_arr,
+        cardType = $("#cardType_select").val();
+        if (cardType == cardTypeConstants[0]) {
+          card_arr = common;
+        } else if (cardType == cardTypeConstants[1]) {
+          card_arr = rare;
+        } else if (cardType == cardTypeConstants[2]) {
+          card_arr = epic;
+        } else if (cardType == cardTypeConstants[3]) {
+          card_arr = legendary;
+        }      
+        return card_arr;
+      }
+    </script>
+    
+  </body>
+</html>
